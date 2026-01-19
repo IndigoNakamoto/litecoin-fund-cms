@@ -29,7 +29,6 @@ if (!process.env.DATABASE_URI) {
 
 import { getPayload } from 'payload'
 import axios from 'axios'
-import { default as config } from '../src/payload.config.js'
 
 // Webflow API client
 function createWebflowClient(apiToken: string) {
@@ -137,6 +136,21 @@ interface WebflowProject {
     'litecoin-contributors'?: string[]
     advocates?: string[]
     hashtags?: string[]
+  }
+}
+
+interface WebflowPost {
+  id: string
+  isDraft: boolean
+  isArchived: boolean
+  fieldData: {
+    link?: string  // Single link field that can be X/Twitter, YouTube, or Reddit
+    'x-post-link'?: string  // Legacy field name (may not exist)
+    'youtube-link'?: string  // Legacy field name (may not exist)
+    'reddit-link'?: string  // Legacy field name (may not exist)
+    projects?: string[]
+    name?: string
+    slug?: string
   }
 }
 
@@ -512,18 +526,189 @@ async function refreshProjects(payload: Awaited<ReturnType<typeof getPayload>>) 
   console.log(`✅ Refreshed projects: ${updated} updated, ${created} created\n`)
 }
 
+async function refreshPosts(payload: Awaited<ReturnType<typeof getPayload>>) {
+  console.log('\n🔄 Refreshing Posts...')
+  
+  const apiToken = process.env.WEBFLOW_API_TOKEN
+  const collectionId = process.env.WEBFLOW_COLLECTION_ID_POSTS
+
+  if (!apiToken || !collectionId) {
+    console.warn('⚠️  Webflow API credentials not configured for posts, skipping...')
+    return
+  }
+
+  const client = createWebflowClient(apiToken)
+  const webflowPosts = await listCollectionItems<WebflowPost>(client, collectionId)
+
+  const activePosts = webflowPosts.filter((p) => !p.isDraft && !p.isArchived)
+  console.log(`Found ${activePosts.length} active posts`)
+
+  let updated = 0
+  let created = 0
+  let skipped = 0
+
+  for (const webflowPost of activePosts) {
+    try {
+      const projectIds = (webflowPost.fieldData.projects || [])
+        .map((id) => projectIdMap.get(id))
+        .filter((id): id is number => typeof id === 'number')
+
+      if (projectIds.length === 0) {
+        console.warn(`  ⚠️  Post ${webflowPost.id} has no valid project references, skipping`)
+        skipped++
+        continue
+      }
+
+      // Webflow uses a single "link" field that can contain X/Twitter, YouTube, or Reddit URLs
+      // Determine link type and map to appropriate field
+      const link = webflowPost.fieldData.link || 
+                   webflowPost.fieldData['x-post-link'] || 
+                   webflowPost.fieldData['youtube-link'] || 
+                   webflowPost.fieldData['reddit-link']
+
+      let xPostLink: string | null = null
+      let youtubeLink: string | null = null
+      let redditLink: string | null = null
+
+      if (link) {
+        const lowerLink = link.toLowerCase()
+        if (lowerLink.includes('x.com') || lowerLink.includes('twitter.com')) {
+          xPostLink = link
+        } else if (lowerLink.includes('youtube.com') || lowerLink.includes('youtu.be')) {
+          youtubeLink = link
+        } else if (lowerLink.includes('reddit.com')) {
+          redditLink = link
+        }
+        // If link doesn't match known patterns, try to determine from existing separate fields
+        if (!xPostLink && !youtubeLink && !redditLink) {
+          // If we have legacy separate fields, use those
+          xPostLink = webflowPost.fieldData['x-post-link'] || null
+          youtubeLink = webflowPost.fieldData['youtube-link'] || null
+          redditLink = webflowPost.fieldData['reddit-link'] || null
+          // If we still have a link but didn't match, default to xPostLink (most common)
+          if (link && !xPostLink && !youtubeLink && !redditLink) {
+            xPostLink = link
+          }
+        }
+      } else {
+        // Fallback to legacy separate fields if no single link field
+        xPostLink = webflowPost.fieldData['x-post-link'] || null
+        youtubeLink = webflowPost.fieldData['youtube-link'] || null
+        redditLink = webflowPost.fieldData['reddit-link'] || null
+      }
+
+      // Check if at least one link exists
+      const hasAnyLink = xPostLink || youtubeLink || redditLink
+
+      // Find existing post by matching link URL first (most reliable)
+      // If that fails, try matching by projects
+      let matchingPost = null
+      
+      if (hasAnyLink) {
+        // Try to find post by link URL
+        const linkToMatch = xPostLink || youtubeLink || redditLink
+        if (linkToMatch) {
+          const postsByLink = await payload.find({
+            collection: 'posts',
+            where: {
+              or: [
+                ...(xPostLink ? [{ xPostLink: { equals: xPostLink } }] : []),
+                ...(youtubeLink ? [{ youtubeLink: { equals: youtubeLink } }] : []),
+                ...(redditLink ? [{ redditLink: { equals: redditLink } }] : []),
+              ],
+            },
+            limit: 10,
+          })
+          
+          if (postsByLink.docs.length > 0) {
+            matchingPost = postsByLink.docs[0]
+          }
+        }
+      }
+      
+      // If not found by link, don't match by projects alone
+      // Multiple posts can share the same projects, so we should create a new post
+      // unless we have a unique link to match on
+
+      const postData = {
+        xPostLink,
+        youtubeLink,
+        redditLink,
+        projects: projectIds,
+      }
+
+      const postName = webflowPost.fieldData.name || webflowPost.id
+      
+      if (matchingPost) {
+        // Check if link already exists and is the same
+        const existingLink = matchingPost.xPostLink || matchingPost.youtubeLink || matchingPost.redditLink
+        const newLink = xPostLink || youtubeLink || redditLink
+        
+        if (existingLink === newLink && hasAnyLink) {
+          // Link already exists and matches, skip
+          console.log(`  ⊘ Skipped post "${postName.substring(0, 50)}..." - link already exists`)
+          skipped++
+        } else {
+          // Update existing post
+          await payload.update({
+            collection: 'posts',
+            id: matchingPost.id,
+            data: postData,
+          })
+          updated++
+          if (hasAnyLink) {
+            console.log(`  ✓ Updated post ${matchingPost.id} "${postName.substring(0, 40)}..." with link`)
+          } else {
+            console.log(`  ⚠️  Updated post ${matchingPost.id} "${postName.substring(0, 40)}..." but still no links`)
+          }
+        }
+      } else {
+        // Create new post
+        try {
+          const newPost = await payload.create({
+            collection: 'posts',
+            data: postData,
+          })
+          created++
+          if (hasAnyLink) {
+            console.log(`  ✓ Created post ${newPost.id} "${postName.substring(0, 40)}..." with link`)
+          } else {
+            console.log(`  ⚠️  Created post ${newPost.id} "${postName.substring(0, 40)}..." but no links found`)
+          }
+        } catch (error: any) {
+          console.error(`  ✗ Error creating post "${postName.substring(0, 40)}...":`, error.message)
+        }
+      }
+    } catch (error: any) {
+      console.error(`  ✗ Error processing post:`, error.message)
+    }
+  }
+
+  console.log(`✅ Refreshed posts: ${updated} updated, ${created} created, ${skipped} skipped\n`)
+}
+
 async function main() {
   console.log('🚀 Starting Webflow to Payload CMS refresh...\n')
   console.log(`✓ PAYLOAD_SECRET: ${process.env.PAYLOAD_SECRET ? 'Set' : 'Missing'}`)
   console.log(`✓ DATABASE_URI: ${process.env.DATABASE_URI ? 'Set' : 'Missing'}\n`)
 
+  // Verify secret is not empty
+  if (!process.env.PAYLOAD_SECRET || process.env.PAYLOAD_SECRET.trim() === '') {
+    console.error('❌ Error: PAYLOAD_SECRET is empty or not set')
+    process.exit(1)
+  }
+
+  // Dynamically import config after env vars are loaded
+  const { default: config } = await import('../src/payload.config.js')
+
   // Initialize Payload
   const payload = await getPayload({ config })
 
   try {
-    // Refresh in order: Contributors -> Projects
+    // Refresh in order: Contributors -> Projects -> Posts
     await refreshContributors(payload)
     await refreshProjects(payload)
+    await refreshPosts(payload)
 
     console.log('✅ Refresh completed successfully!')
     console.log(`\n📊 Summary:`)

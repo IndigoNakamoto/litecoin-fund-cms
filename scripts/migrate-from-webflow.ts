@@ -168,10 +168,13 @@ interface WebflowPost {
   isDraft: boolean
   isArchived: boolean
   fieldData: {
-    'x-post-link'?: string
-    'youtube-link'?: string
-    'reddit-link'?: string
+    link?: string  // Single link field that can be X/Twitter, YouTube, or Reddit
+    'x-post-link'?: string  // Legacy field name (may not exist)
+    'youtube-link'?: string  // Legacy field name (may not exist)
+    'reddit-link'?: string  // Legacy field name (may not exist)
     projects?: string[]
+    name?: string
+    slug?: string
   }
 }
 
@@ -643,18 +646,57 @@ async function migratePosts(payload: Awaited<ReturnType<typeof getPayload>>) {
         continue
       }
 
+      // Webflow uses a single "link" field that can contain X/Twitter, YouTube, or Reddit URLs
+      // Determine link type and map to appropriate field
+      const link = webflowPost.fieldData.link || 
+                   webflowPost.fieldData['x-post-link'] || 
+                   webflowPost.fieldData['youtube-link'] || 
+                   webflowPost.fieldData['reddit-link']
+
+      let xPostLink: string | undefined
+      let youtubeLink: string | undefined
+      let redditLink: string | undefined
+
+      if (link) {
+        const lowerLink = link.toLowerCase()
+        if (lowerLink.includes('x.com') || lowerLink.includes('twitter.com')) {
+          xPostLink = link
+        } else if (lowerLink.includes('youtube.com') || lowerLink.includes('youtu.be')) {
+          youtubeLink = link
+        } else if (lowerLink.includes('reddit.com')) {
+          redditLink = link
+        }
+        // If link doesn't match known patterns, try to determine from existing separate fields
+        if (!xPostLink && !youtubeLink && !redditLink) {
+          // If we have legacy separate fields, use those
+          xPostLink = webflowPost.fieldData['x-post-link']
+          youtubeLink = webflowPost.fieldData['youtube-link']
+          redditLink = webflowPost.fieldData['reddit-link']
+          // If we still have a link but didn't match, default to xPostLink (most common)
+          if (link && !xPostLink && !youtubeLink && !redditLink) {
+            xPostLink = link
+          }
+        }
+      } else {
+        // Fallback to legacy separate fields if no single link field
+        xPostLink = webflowPost.fieldData['x-post-link']
+        youtubeLink = webflowPost.fieldData['youtube-link']
+        redditLink = webflowPost.fieldData['reddit-link']
+      }
+
       await payload.create({
         collection: 'posts',
         data: {
-          xPostLink: webflowPost.fieldData['x-post-link'],
-          youtubeLink: webflowPost.fieldData['youtube-link'],
-          redditLink: webflowPost.fieldData['reddit-link'],
+          xPostLink,
+          youtubeLink,
+          redditLink,
           projects: projectIds,
         },
       })
 
       created++
-      console.log(`  ✓ Created post`)
+      const linkInfo = link ? `with link: ${link.substring(0, 50)}...` : 'without link'
+      console.log(`  ✓ Created post ${linkInfo}`)
     } catch (error: any) {
       console.error(`  ✗ Error creating post:`, error.message)
     }

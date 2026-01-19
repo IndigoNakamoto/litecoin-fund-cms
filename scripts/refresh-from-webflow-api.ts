@@ -155,8 +155,11 @@ interface WebflowProject {
     'reddit-link'?: string
     'facebook-link'?: string
     'bitcoin-contributors'?: string[]
+    'bitcoin-contributors-2'?: string[]
     'litecoin-contributors'?: string[]
+    'litecoin-contributors-2'?: string[]
     advocates?: string[]
+    'advocates-2'?: string[]
     hashtags?: string[]
   }
 }
@@ -246,39 +249,88 @@ async function refreshContributors() {
   console.log('\n🔄 Refreshing Contributors...')
   
   const apiToken = process.env.WEBFLOW_API_TOKEN
-  const collectionId = process.env.WEBFLOW_COLLECTION_ID_CONTRIBUTORS
+  const contributorsCollectionId = process.env.WEBFLOW_COLLECTION_ID_CONTRIBUTORS
+  const projectsCollectionId = process.env.WEBFLOW_COLLECTION_ID_PROJECTS
 
-  if (!apiToken || !collectionId) {
+  if (!apiToken || !contributorsCollectionId) {
     console.warn('⚠️  Webflow API credentials not configured for contributors, skipping...')
     return
   }
 
   const client = createWebflowClient(apiToken)
-  const webflowContributors = await listCollectionItems<WebflowContributor>(client, collectionId)
-  const activeContributors = webflowContributors.filter((c) => !c.isDraft && !c.isArchived)
+  
+  // Get all contributors (including archived/draft) to check which are referenced
+  const allWebflowContributors = await listCollectionItems<WebflowContributor>(client, contributorsCollectionId)
+  console.log(`Found ${allWebflowContributors.length} total contributors in Webflow`)
 
-  console.log(`Found ${activeContributors.length} active contributors in Webflow`)
+  // Find contributors referenced in projects (even if archived/draft)
+  const contributorsToMigrate = new Set<string>()
+  if (projectsCollectionId) {
+    try {
+      const webflowProjects = await listCollectionItems<WebflowProject>(client, projectsCollectionId)
+      for (const project of webflowProjects) {
+        const allContributorIds = [
+          ...(project.fieldData['bitcoin-contributors'] || []),
+          ...(project.fieldData['bitcoin-contributors-2'] || []),
+          ...(project.fieldData['litecoin-contributors'] || []),
+          ...(project.fieldData['litecoin-contributors-2'] || []),
+          ...(project.fieldData.advocates || []),
+          ...(project.fieldData['advocates-2'] || []),
+        ]
+        allContributorIds.forEach((id) => contributorsToMigrate.add(id))
+      }
+      console.log(`Found ${contributorsToMigrate.size} contributors referenced in projects`)
+    } catch (error: any) {
+      console.warn('⚠️  Could not fetch projects to check referenced contributors:', error.message)
+    }
+  }
+
+  // Include ALL non-archived contributors (active + drafts)
+  // This matches what Webflow shows on the /projects page ("Project Builders")
+  // We only exclude archived contributors since those are truly hidden
+  const contributorsToProcess = allWebflowContributors.filter(
+    (c) => !c.isArchived || contributorsToMigrate.has(c.id)
+  )
+
+  const activeCount = contributorsToProcess.filter((c) => !c.isDraft && !c.isArchived).length
+  const archivedCount = contributorsToProcess.filter((c) => c.isArchived).length
+  const draftCount = contributorsToProcess.filter((c) => c.isDraft && !c.isArchived).length
+
+  console.log(`Processing ${contributorsToProcess.length} contributors:`)
+  console.log(`  - Active: ${activeCount}`)
+  console.log(`  - Drafts: ${draftCount}`)
+  if (archivedCount > 0) console.log(`  - Archived (referenced): ${archivedCount}`)
 
   // Get existing Payload contributors
   const payloadContributors = await listPayloadItems('contributors')
-  const payloadContributorsBySlug = new Map(payloadContributors.map((c) => [c.slug, c]))
+  // Create multiple lookup maps for better matching
+  const payloadContributorsBySlug = new Map(
+    payloadContributors.map((c) => [c.slug?.toLowerCase().trim() || '', c])
+  )
+  const payloadContributorsByName = new Map(
+    payloadContributors
+      .filter((c) => c.name)
+      .map((c) => [c.name.toLowerCase().trim(), c])
+  )
 
   console.log(`Found ${payloadContributors.length} existing contributors in Payload`)
 
   let updated = 0
   let created = 0
+  let skipped = 0
 
-  for (const webflowContributor of activeContributors) {
+  for (const webflowContributor of contributorsToProcess) {
     try {
       const name = webflowContributor.fieldData.name || 'Unknown Contributor'
-      const slug = webflowContributor.fieldData.slug || webflowContributor.slug || webflowContributor.id
+      const rawSlug = webflowContributor.fieldData.slug || webflowContributor.slug || webflowContributor.id
 
-      if (!slug || slug.trim().length === 0) {
+      if (!rawSlug || rawSlug.trim().length === 0) {
         console.warn(`  ⚠️  Skipping contributor "${name}" - missing slug`)
+        skipped++
         continue
       }
 
-      const sanitizedSlug = slug
+      const sanitizedSlug = rawSlug
         .toLowerCase()
         .trim()
         .replace(/[^a-z0-9-]/g, '-')
@@ -287,6 +339,7 @@ async function refreshContributors() {
 
       if (!sanitizedSlug || sanitizedSlug.length === 0) {
         console.warn(`  ⚠️  Skipping contributor "${name}" - invalid slug after sanitization`)
+        skipped++
         continue
       }
 
@@ -301,21 +354,38 @@ async function refreshContributors() {
         email: webflowContributor.fieldData.email,
       }
 
-      const existing = payloadContributorsBySlug.get(sanitizedSlug) || 
-                       payloadContributorsBySlug.get(webflowContributor.id)
+      // Try multiple matching strategies
+      let existing = payloadContributorsBySlug.get(sanitizedSlug)
+      
+      // If not found by slug, try by name
+      if (!existing && name && name !== 'Unknown Contributor') {
+        existing = payloadContributorsByName.get(name.toLowerCase().trim())
+      }
+
+      // If still not found, try original slug variations
+      if (!existing) {
+        const originalSlug = (webflowContributor.fieldData.slug || webflowContributor.slug || '')
+          .toLowerCase()
+          .trim()
+        if (originalSlug) {
+          existing = payloadContributorsBySlug.get(originalSlug)
+        }
+      }
 
       if (existing) {
         // Update existing contributor
         await payloadClient.patch(`/contributors/${existing.id}`, contributorData)
         contributorIdMap.set(webflowContributor.id, existing.id)
         updated++
-        console.log(`  ✓ Updated contributor: ${name}`)
+        const status = webflowContributor.isArchived ? ' (archived)' : webflowContributor.isDraft ? ' (draft)' : ''
+        console.log(`  ✓ Updated contributor: ${name}${status}`)
       } else {
         // Create new contributor
         const response = await payloadClient.post('/contributors', contributorData)
         contributorIdMap.set(webflowContributor.id, response.data.id)
         created++
-        console.log(`  ✓ Created contributor: ${name}`)
+        const status = webflowContributor.isArchived ? ' (archived)' : webflowContributor.isDraft ? ' (draft)' : ''
+        console.log(`  ✓ Created contributor: ${name}${status}`)
       }
     } catch (error: any) {
       const name = webflowContributor.fieldData.name || webflowContributor.slug || 'Unknown'
@@ -323,10 +393,11 @@ async function refreshContributors() {
       if (error.response?.data) {
         console.error(`    Details:`, JSON.stringify(error.response.data, null, 2))
       }
+      skipped++
     }
   }
 
-  console.log(`✅ Refreshed contributors: ${updated} updated, ${created} created\n`)
+  console.log(`✅ Refreshed contributors: ${updated} updated, ${created} created, ${skipped} skipped\n`)
 }
 
 async function refreshProjects() {
@@ -389,18 +460,27 @@ async function refreshProjects() {
         continue
       }
 
-      // Map contributor IDs
-      const bitcoinContributorIds = webflowProject.fieldData['bitcoin-contributors']
-        ?.map((id) => contributorIdMap.get(id))
-        .filter((id): id is number => typeof id === 'number') || []
+      // Map contributor IDs (try both field name variations for compatibility)
+      const bitcoinContributorIds = [
+        ...(webflowProject.fieldData['bitcoin-contributors-2'] || []),
+        ...(webflowProject.fieldData['bitcoin-contributors'] || []),
+      ]
+        .map((id) => contributorIdMap.get(id))
+        .filter((id): id is number => typeof id === 'number')
 
-      const litecoinContributorIds = webflowProject.fieldData['litecoin-contributors']
-        ?.map((id) => contributorIdMap.get(id))
-        .filter((id): id is number => typeof id === 'number') || []
+      const litecoinContributorIds = [
+        ...(webflowProject.fieldData['litecoin-contributors-2'] || []),
+        ...(webflowProject.fieldData['litecoin-contributors'] || []),
+      ]
+        .map((id) => contributorIdMap.get(id))
+        .filter((id): id is number => typeof id === 'number')
 
-      const advocateIds = webflowProject.fieldData.advocates
-        ?.map((id) => contributorIdMap.get(id))
-        .filter((id): id is number => typeof id === 'number') || []
+      const advocateIds = [
+        ...(webflowProject.fieldData['advocates-2'] || []),
+        ...(webflowProject.fieldData.advocates || []),
+      ]
+        .map((id) => contributorIdMap.get(id))
+        .filter((id): id is number => typeof id === 'number')
 
       // Map status
       let status = (webflowProject.fieldData.status || '').toLowerCase()
