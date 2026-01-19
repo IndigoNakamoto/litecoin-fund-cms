@@ -1,0 +1,266 @@
+# Payload CMS - Static Context (Rules)
+
+## Project Overview
+
+**Purpose**: Headless CMS replacing Webflow for the Litecoin OpenSource Fund project. Provides content management for projects, contributors, FAQs, posts, and updates.
+
+**Tech Stack**:
+- Payload CMS 3.68.3
+- Next.js 15 (App Router)
+- TypeScript
+- PostgreSQL (via `@payloadcms/db-postgres`)
+- Lexical Rich Text Editor (`@payloadcms/richtext-lexical`)
+
+**Key Relationships**:
+- Serves data to `litecoin-fund` application
+- Replaces Webflow CMS functionality
+- Uses same PostgreSQL database (or separate instance)
+
+## Collections Structure
+
+### Projects (`collections/Projects.ts`)
+
+**Purpose**: Main project collection with all metadata, social links, and contributors.
+
+**Key Fields**:
+- `name`, `slug` - Project identification
+- `summary`, `content` - Rich text content (Lexical format)
+- `status` - Options: `active`, `completed`, `paused`, `archived`
+- `projectType` - Options: `open-source`, `research`, `education`, `infrastructure`
+- `hidden`, `recurring` - Boolean flags
+- `totalPaid`, `serviceFeesCollected` - Financial data
+- Social links: `website`, `github`, `twitter`, `discord`, `telegram`, `reddit`, `facebook`
+- Relationships: `bitcoinContributors`, `litecoinContributors`, `advocates` (to Contributors)
+- `hashtags` - Array of tag objects
+
+### Contributors (`collections/Contributors.ts`)
+
+**Purpose**: Contributor profiles with social links.
+
+**Key Fields**:
+- `name`, `slug` - Contributor identification
+- Social links: `twitterLink`, `discordLink`, `githubLink`, `youtubeLink`, `linkedinLink`
+- `email` - Contact email
+- `profilePicture` - Media relationship
+
+**Relationships**:
+- Can be linked to multiple projects (via Projects collection)
+
+### FAQs (`collections/FAQs.ts`)
+
+**Purpose**: Project-specific frequently asked questions.
+
+**Key Fields**:
+- `question` - FAQ question text
+- `answer` - Rich text answer (Lexical format)
+- `project` - Relationship to Projects
+- `order` - Sorting order
+- `category` - Optional categorization
+
+### Posts (`collections/Posts.ts`)
+
+**Purpose**: Social media posts linked to projects.
+
+**Key Fields**:
+- `xPostLink` - X (Twitter) post URL
+- `youtubeLink` - YouTube link
+- `redditLink` - Reddit link
+- `projects` - Relationship to Projects (array, can link to multiple)
+
+### Updates (`collections/Updates.ts`)
+
+**Purpose**: Project updates and announcements.
+
+**Key Fields**:
+- `title`, `summary`, `content` - Rich text content
+- `project` - Relationship to Projects
+- `date` - Update date
+- `authorTwitterHandle` - Author identification
+- `tags` - Array of tag objects
+
+### Media (`collections/Media.ts`)
+
+**Purpose**: File uploads (images, documents, etc.).
+
+**Key Fields**:
+- Standard Payload media fields
+- Used for project cover images, contributor profile pictures, etc.
+
+### Users (`collections/Users.ts`)
+
+**Purpose**: Admin users for Payload CMS.
+
+**Key Fields**:
+- Standard Payload user fields
+- Authentication and authorization
+
+## Integration Patterns
+
+### API Compatibility
+
+**Service Layer Compatibility**: The Payload service layer in `litecoin-fund/services/payload/` maintains the same function signatures as the Webflow service layer for seamless migration.
+
+**Function Signatures**:
+- `getAllPublishedProjects()` - Returns all published projects
+- `getProjectBySlug(slug)` - Get project by slug
+- `getProjectSummaries()` - Get lightweight project summaries
+- `getFAQsByProjectSlug(slug)` - Get FAQs for a project
+- `getPostsByProjectSlug(slug)` - Get posts for a project
+- `getUpdatesByProjectSlug(slug)` - Get updates for a project
+- `getAllActiveContributors()` - Get all contributors
+- `getContributorsByIds(ids)` - Get contributors by IDs
+
+### API Endpoints
+
+**REST API**: `/api/projects`, `/api/contributors`, etc.
+**GraphQL API**: `/api/graphql`
+**Admin Panel**: `/admin`
+
+### Environment Variables
+
+- `DATABASE_URI` - PostgreSQL connection string
+- `PAYLOAD_SECRET` - Secret key for Payload (required)
+- `NEXT_PUBLIC_SERVER_URL` - Server URL (e.g., `http://localhost:3000`)
+
+## Migration from Webflow
+
+### Migration Script
+
+**Location**: `scripts/migrate-from-webflow.ts`
+
+**Usage**:
+```bash
+npm run migrate
+# or
+npx tsx scripts/migrate-from-webflow.ts
+```
+
+**Process**:
+1. Fetches data from Webflow API
+2. Maps Webflow fields to Payload collections
+3. Creates/updates records in Payload
+4. Handles relationships (contributors, projects, FAQs, etc.)
+
+**Key Mappings**:
+- Webflow item IDs → Payload slugs (with sanitization)
+- Webflow field names → Payload field names (snake_case to camelCase)
+- Webflow HTML/text → Lexical rich text format
+- Webflow relationships → Payload relationships (via ID mapping)
+
+### Data Transformation
+
+**Slug Sanitization**:
+- Convert to lowercase
+- Replace invalid characters with hyphens
+- Remove leading/trailing hyphens
+- Ensure uniqueness
+
+**Rich Text Conversion**:
+- Plain text/HTML → Lexical editor format
+- Simple paragraph-based structure
+- Complex HTML may need manual review
+
+**Status Mapping**:
+- Webflow status values → Payload status enum
+- Common mappings: `active`, `completed`, `paused`, `archived`
+
+**Project Type Mapping**:
+- Webflow project types → Payload project types
+- Mappings: `open-source`, `research`, `education`, `infrastructure`
+
+## Code Patterns
+
+### Collection Definition
+
+```typescript
+// collections/Projects.ts
+import { CollectionConfig } from 'payload/types'
+
+export const Projects: CollectionConfig = {
+  slug: 'projects',
+  // ... collection config
+}
+```
+
+### Rich Text Fields
+
+```typescript
+{
+  name: 'content',
+  type: 'richText',
+  // Uses Lexical editor
+}
+```
+
+### Relationships
+
+```typescript
+{
+  name: 'project',
+  type: 'relationship',
+  relationTo: 'projects',
+  required: true,
+}
+```
+
+### Array Relationships
+
+```typescript
+{
+  name: 'projects',
+  type: 'relationship',
+  relationTo: 'projects',
+  hasMany: true,
+}
+```
+
+## Testing
+
+**Test Scripts**:
+- `npm run test` - Run all tests
+- `npm run test:int` - Integration tests (Vitest)
+- `npm run test:e2e` - End-to-end tests (Playwright)
+
+**Test Files**:
+- `tests/` - Test files
+- `vitest.config.mts` - Vitest configuration
+- `playwright.config.ts` - Playwright configuration
+
+## Development
+
+### Running Locally
+
+```bash
+npm run dev
+# Access admin at http://localhost:3000/admin
+```
+
+### Generating Types
+
+```bash
+npm run generate:types
+# Generates TypeScript types in src/payload-types.ts
+```
+
+### Building
+
+```bash
+npm run build
+npm start
+```
+
+## Key Files
+
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Integration guide for litecoin-fund
+- `src/payload.config.ts` - Payload configuration
+- `src/collections/` - Collection definitions
+- `scripts/migrate-from-webflow.ts` - Webflow migration script
+
+## Notes
+
+- Always run `generate:types` after modifying collections
+- Lexical rich text format is JSON-based, not HTML
+- Slug uniqueness is enforced by Payload
+- Relationships use numeric IDs (PostgreSQL default)
+- Update rules immediately when patterns change or AI fails at a task
+- For migration workflows, see `.cursor/skills/` directory

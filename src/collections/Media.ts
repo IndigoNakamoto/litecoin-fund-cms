@@ -4,6 +4,7 @@ export const Media: CollectionConfig = {
   slug: 'media',
   access: {
     read: () => true,
+    create: () => true, // Allow creates for image migration scripts
   },
   fields: [
     {
@@ -12,5 +13,17 @@ export const Media: CollectionConfig = {
       required: true,
     },
   ],
-  upload: true,
+  upload: {
+    /**
+     * Avoid HEIF/HEIC uploads unless your `sharp` build has HEIF support.
+     * Otherwise Payload will error during `generateFileData`.
+     */
+    mimeTypes: [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif',
+      'image/svg+xml',
+    ],
+  },
 }

@@ -69,6 +69,11 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    contributors: Contributor;
+    projects: Project;
+    faqs: Faq;
+    posts: Post;
+    updates: Update;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,14 +83,20 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    contributors: ContributorsSelect<false> | ContributorsSelect<true>;
+    projects: ProjectsSelect<false> | ProjectsSelect<true>;
+    faqs: FaqsSelect<false> | FaqsSelect<true>;
+    posts: PostsSelect<false> | PostsSelect<true>;
+    updates: UpdatesSelect<false> | UpdatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
+  fallbackLocale: null;
   globals: {};
   globalsSelect: {};
   locale: null;
@@ -120,7 +131,7 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -144,7 +155,7 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
   updatedAt: string;
   createdAt: string;
@@ -160,10 +171,247 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contributors".
+ */
+export interface Contributor {
+  id: number;
+  name: string;
+  /**
+   * URL-friendly identifier
+   */
+  slug: string;
+  profilePicture?: (number | null) | Media;
+  /**
+   * Twitter/X profile URL
+   */
+  twitterLink?: string | null;
+  /**
+   * Discord profile URL
+   */
+  discordLink?: string | null;
+  /**
+   * GitHub profile URL
+   */
+  githubLink?: string | null;
+  /**
+   * YouTube channel URL
+   */
+  youtubeLink?: string | null;
+  /**
+   * LinkedIn profile URL
+   */
+  linkedinLink?: string | null;
+  email?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects".
+ */
+export interface Project {
+  id: number;
+  name: string;
+  /**
+   * URL-friendly identifier
+   */
+  slug: string;
+  summary: string;
+  /**
+   * Full project description/content
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  coverImage?: (number | null) | Media;
+  status: 'active' | 'completed' | 'paused' | 'archived';
+  projectType?: ('open-source' | 'research' | 'education' | 'infrastructure') | null;
+  /**
+   * Hide project from public listings
+   */
+  hidden?: boolean | null;
+  /**
+   * Is this a recurring project?
+   */
+  recurring?: boolean | null;
+  /**
+   * Total amount paid to project
+   */
+  totalPaid?: number | null;
+  /**
+   * Service fees collected
+   */
+  serviceFeesCollected?: number | null;
+  /**
+   * Website URL
+   */
+  website?: string | null;
+  /**
+   * GitHub repository URL
+   */
+  github?: string | null;
+  /**
+   * Twitter/X profile URL
+   */
+  twitter?: string | null;
+  /**
+   * Discord server URL
+   */
+  discord?: string | null;
+  /**
+   * Telegram channel/group URL
+   */
+  telegram?: string | null;
+  /**
+   * Reddit community URL
+   */
+  reddit?: string | null;
+  /**
+   * Facebook page URL
+   */
+  facebook?: string | null;
+  /**
+   * Bitcoin contributors to this project
+   */
+  bitcoinContributors?: (number | Contributor)[] | null;
+  /**
+   * Litecoin contributors to this project
+   */
+  litecoinContributors?: (number | Contributor)[] | null;
+  /**
+   * Project advocates
+   */
+  advocates?: (number | Contributor)[] | null;
+  hashtags?:
+    | {
+        tag?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs".
+ */
+export interface Faq {
+  id: number;
+  question: string;
+  answer: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  project: number | Project;
+  /**
+   * Display order (lower numbers appear first)
+   */
+  order?: number | null;
+  /**
+   * Optional category for grouping FAQs
+   */
+  category?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts".
+ */
+export interface Post {
+  id: number;
+  /**
+   * X/Twitter post URL
+   */
+  xPostLink?: string | null;
+  /**
+   * YouTube video URL
+   */
+  youtubeLink?: string | null;
+  /**
+   * Reddit post URL
+   */
+  redditLink?: string | null;
+  /**
+   * Related projects
+   */
+  projects?: (number | Project)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "updates".
+ */
+export interface Update {
+  id: number;
+  title: string;
+  /**
+   * Brief summary of the update
+   */
+  summary?: string | null;
+  /**
+   * Full update content
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  project: number | Project;
+  date: string;
+  /**
+   * Twitter/X handle of the author
+   */
+  authorTwitterHandle?: string | null;
+  tags?:
+    | {
+        tag?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -180,20 +428,40 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'contributors';
+        value: number | Contributor;
+      } | null)
+    | ({
+        relationTo: 'projects';
+        value: number | Project;
+      } | null)
+    | ({
+        relationTo: 'faqs';
+        value: number | Faq;
+      } | null)
+    | ({
+        relationTo: 'posts';
+        value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'updates';
+        value: number | Update;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -203,10 +471,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -226,7 +494,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -271,6 +539,103 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contributors_select".
+ */
+export interface ContributorsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  profilePicture?: T;
+  twitterLink?: T;
+  discordLink?: T;
+  githubLink?: T;
+  youtubeLink?: T;
+  linkedinLink?: T;
+  email?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "projects_select".
+ */
+export interface ProjectsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  summary?: T;
+  content?: T;
+  coverImage?: T;
+  status?: T;
+  projectType?: T;
+  hidden?: T;
+  recurring?: T;
+  totalPaid?: T;
+  serviceFeesCollected?: T;
+  website?: T;
+  github?: T;
+  twitter?: T;
+  discord?: T;
+  telegram?: T;
+  reddit?: T;
+  facebook?: T;
+  bitcoinContributors?: T;
+  litecoinContributors?: T;
+  advocates?: T;
+  hashtags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "faqs_select".
+ */
+export interface FaqsSelect<T extends boolean = true> {
+  question?: T;
+  answer?: T;
+  project?: T;
+  order?: T;
+  category?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "posts_select".
+ */
+export interface PostsSelect<T extends boolean = true> {
+  xPostLink?: T;
+  youtubeLink?: T;
+  redditLink?: T;
+  projects?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "updates_select".
+ */
+export interface UpdatesSelect<T extends boolean = true> {
+  title?: T;
+  summary?: T;
+  content?: T;
+  project?: T;
+  date?: T;
+  authorTwitterHandle?: T;
+  tags?:
+    | T
+    | {
+        tag?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
