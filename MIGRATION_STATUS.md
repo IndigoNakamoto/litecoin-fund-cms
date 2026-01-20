@@ -10,6 +10,7 @@
 - FAQs: 250
 - Posts: 42
 - Updates: 0
+- Matching Donors: 0 (collection created, needs migration from Webflow)
 - Media files: 1
 
 **Webflow Comparison:**

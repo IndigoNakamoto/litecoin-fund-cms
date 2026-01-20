@@ -12,6 +12,7 @@ import { Projects } from './collections/Projects'
 import { FAQs } from './collections/FAQs'
 import { Posts } from './collections/Posts'
 import { Updates } from './collections/Updates'
+import { MatchingDonors } from './collections/MatchingDonors'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -23,7 +24,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Contributors, Projects, FAQs, Posts, Updates],
+  collections: [Users, Media, Contributors, Projects, FAQs, Posts, Updates, MatchingDonors],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

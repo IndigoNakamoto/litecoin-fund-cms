@@ -16,6 +16,7 @@ This script migrates data from Webflow CMS to Payload CMS.
    WEBFLOW_COLLECTION_ID_FAQS=your_faqs_collection_id
    WEBFLOW_COLLECTION_ID_POSTS=your_posts_collection_id
    WEBFLOW_COLLECTION_ID_PROJECT_UPDATES=your_updates_collection_id
+   WEBFLOW_COLLECTION_ID_MATCHING_DONORS=your_matching_donors_collection_id
 
    # Payload CMS configuration
    DATABASE_URI=postgresql://user@localhost:5432/payload_cms
@@ -50,6 +51,34 @@ The script migrates data in the following order:
 3. **FAQs**: Migrates FAQs and links them to projects
 4. **Posts**: Migrates social media posts and links them to projects
 5. **Updates**: Migrates project updates and links them to projects
+
+## migrate-matching-donors.ts
+
+This script migrates Matching Donors from Webflow to Payload CMS.
+
+### Usage
+
+```bash
+cd payload-cms
+npx tsx scripts/migrate-matching-donors.ts
+```
+
+### What it does
+
+- Fetches all matching donors from Webflow
+- Maps option fields (status, matching-type) to Payload values
+- Links to existing projects and contributors in Payload
+- Creates or updates matching donors in Payload CMS
+
+### Required Environment Variables
+
+In addition to the standard Webflow variables, you need:
+
+```env
+WEBFLOW_COLLECTION_ID_MATCHING_DONORS=your_matching_donors_collection_id
+```
+
+You can find this value in the legacy project's `.env` file.
 
 ### Features
 

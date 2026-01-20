@@ -74,6 +74,7 @@ export interface Config {
     faqs: Faq;
     posts: Post;
     updates: Update;
+    'matching-donors': MatchingDonor;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     faqs: FaqsSelect<false> | FaqsSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     updates: UpdatesSelect<false> | UpdatesSelect<true>;
+    'matching-donors': MatchingDonorsSelect<false> | MatchingDonorsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -182,15 +184,15 @@ export interface Contributor {
   slug: string;
   profilePicture?: (number | null) | Media;
   /**
-   * Twitter/X profile URL
+   * Twitter/X profile URL (e.g., https://twitter.com/username)
    */
   twitterLink?: string | null;
   /**
-   * Discord profile URL
+   * Discord profile URL or invite link
    */
   discordLink?: string | null;
   /**
-   * GitHub profile URL
+   * GitHub profile URL (e.g., https://github.com/username)
    */
   githubLink?: string | null;
   /**
@@ -408,6 +410,55 @@ export interface Update {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "matching-donors".
+ */
+export interface MatchingDonor {
+  id: number;
+  /**
+   * Original Webflow item ID (for migration tracking)
+   */
+  webflowId?: string | null;
+  /**
+   * Name of the matching donor
+   */
+  name: string;
+  /**
+   * Whether matching applies to all projects or specific projects
+   */
+  matchingType: 'all-projects' | 'per-project';
+  /**
+   * Total amount available for matching (in USD)
+   */
+  totalMatchingAmount: number;
+  /**
+   * Projects this donor supports (only used when matchingType is "Per Project")
+   */
+  supportedProjects?: (number | Project)[] | null;
+  /**
+   * Start date for the matching period
+   */
+  startDate: string;
+  /**
+   * End date for the matching period
+   */
+  endDate: string;
+  /**
+   * Multiplier for matching (e.g., 2x means $1 donation = $2 match)
+   */
+  multiplier?: number | null;
+  /**
+   * Status of the matching donor
+   */
+  status: 'active' | 'inactive';
+  /**
+   * Optional contributor associated with this matching donor
+   */
+  contributor?: (number | null) | Contributor;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -457,6 +508,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'updates';
         value: number | Update;
+      } | null)
+    | ({
+        relationTo: 'matching-donors';
+        value: number | MatchingDonor;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -634,6 +689,24 @@ export interface UpdatesSelect<T extends boolean = true> {
         tag?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "matching-donors_select".
+ */
+export interface MatchingDonorsSelect<T extends boolean = true> {
+  webflowId?: T;
+  name?: T;
+  matchingType?: T;
+  totalMatchingAmount?: T;
+  supportedProjects?: T;
+  startDate?: T;
+  endDate?: T;
+  multiplier?: T;
+  status?: T;
+  contributor?: T;
   updatedAt?: T;
   createdAt?: T;
 }
