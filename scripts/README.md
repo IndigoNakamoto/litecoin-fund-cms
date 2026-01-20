@@ -32,7 +32,7 @@ This script migrates data from Webflow CMS to Payload CMS.
 Run the migration script:
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npm run migrate
 ```
 
@@ -59,7 +59,7 @@ This script migrates Matching Donors from Webflow to Payload CMS.
 ### Usage
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/migrate-matching-donors.ts
 ```
 

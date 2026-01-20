@@ -38,7 +38,7 @@ Created `find-missing-contributors.ts` to help identify missing contributors:
 ### 1. Diagnose Missing Contributors
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/find-missing-contributors.ts
 ```
 
@@ -50,7 +50,7 @@ This will show you:
 ### 2. Fix Missing Contributors
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/refresh-from-webflow-api.ts
 ```
 

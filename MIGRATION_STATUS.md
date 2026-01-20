@@ -45,7 +45,7 @@ The refresh script requires API authentication. Options:
 
 **To refresh data:**
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/refresh-from-webflow-api.ts
 ```
 
@@ -53,7 +53,7 @@ npx tsx scripts/refresh-from-webflow-api.ts
 
 **To migrate images:**
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 # Make sure PAYLOAD_API_TOKEN is set in .env
 npx tsx scripts/migrate-images.ts
 ```
@@ -69,7 +69,7 @@ If authentication is not available, images will be uploaded but not linked. You 
 
 After refreshing data and migrating images:
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/audit-payload-data-api.ts
 ```
 
@@ -79,7 +79,7 @@ To enable API access for scripts:
 
 1. Log into Payload admin panel: `http://localhost:3001/admin`
 2. Create an API token or use existing authentication
-3. Add to `payload-cms/.env`:
+3. Add to `litecoin-fund-cms/.env`:
    ```
    PAYLOAD_API_TOKEN=your-token-here
    ```
@@ -114,7 +114,7 @@ If API authentication is not available, you can:
 **⚠️ IMPORTANT:** Restart Payload CMS server after access control changes:
 ```bash
 # Stop the current server (Ctrl+C) and restart:
-cd payload-cms
+cd litecoin-fund-cms
 npm run dev
 ```
 

@@ -2,7 +2,7 @@
  * Migration script to import Matching Donors from Webflow to Payload CMS
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/migrate-matching-donors.ts
  * 
  * Make sure to set environment variables:

@@ -2,7 +2,7 @@
  * Verify contributor-project relationships are properly linked
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/verify-contributor-links.ts
  */
 

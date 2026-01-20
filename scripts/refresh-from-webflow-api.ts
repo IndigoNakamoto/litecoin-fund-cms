@@ -3,7 +3,7 @@
  * This script updates existing records instead of skipping them
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/refresh-from-webflow-api.ts
  */
 

@@ -9,7 +9,7 @@ The access control has been updated to allow updates and creates. **You must res
 ```bash
 # In the terminal running Payload CMS, stop it (Ctrl+C)
 # Then restart:
-cd payload-cms
+cd litecoin-fund-cms
 npm run dev
 ```
 
@@ -18,7 +18,7 @@ npm run dev
 After restarting, refresh the outdated data:
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/refresh-from-webflow-api.ts
 ```
 
@@ -29,7 +29,7 @@ This will update all 31 contributors and 23 projects with the latest data from W
 Once data is refreshed, migrate all images:
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/migrate-images.ts
 ```
 
@@ -44,7 +44,7 @@ This will:
 After migration, verify everything is complete:
 
 ```bash
-cd payload-cms
+cd litecoin-fund-cms
 npx tsx scripts/audit-payload-data-api.ts
 ```
 

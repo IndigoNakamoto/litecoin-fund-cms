@@ -2,7 +2,7 @@
  * Diagnostic script to find contributors in Webflow that are missing from Payload
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/find-missing-contributors.ts
  */
 

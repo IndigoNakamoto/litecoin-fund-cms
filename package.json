@@ -1,7 +1,7 @@
 {
-  "name": "payload-cms",
+  "name": "litecoin-fund-cms",
   "version": "1.0.0",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Litecoin OpenSource Fund CMS - Headless CMS replacing Webflow",
   "license": "MIT",
   "type": "module",
   "scripts": {

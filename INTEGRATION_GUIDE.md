@@ -4,7 +4,7 @@ This guide explains how to integrate the Payload CMS instance with the `litecoin
 
 ## Overview
 
-The Payload CMS project is located in `/migrate/payload-cms` and provides a headless CMS for managing:
+The Payload CMS project is located in `/migrate/litecoin-fund-cms` and provides a headless CMS for managing:
 - **Projects** - Full project management with all metadata, social links, and contributors
 - **Contributors** - Contributor profiles with social links
 - **FAQs** - Project-specific FAQs
@@ -19,7 +19,7 @@ The Payload CMS project is located in `/migrate/payload-cms` and provides a head
 
 1. Navigate to the Payload CMS directory:
    ```bash
-   cd migrate/payload-cms
+   cd migrate/litecoin-fund-cms
    ```
 
 2. Install dependencies (if not already done):
@@ -124,7 +124,7 @@ During migration, you can run both services:
 
 1. **Payload CMS** (port 3000):
    ```bash
-   cd migrate/payload-cms
+   cd migrate/litecoin-fund-cms
    npm run dev
    ```
 

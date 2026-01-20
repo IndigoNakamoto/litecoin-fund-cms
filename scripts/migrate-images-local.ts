@@ -3,7 +3,7 @@
  * This avoids REST API multipart form data issues
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/migrate-images-local.ts
  */
 

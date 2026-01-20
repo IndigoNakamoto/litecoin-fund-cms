@@ -2,7 +2,7 @@
  * Audit script to check current Payload CMS data state via API
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/audit-payload-data-api.ts
  */
 

@@ -2,7 +2,7 @@
  * Image migration script to download images from Webflow and upload to Payload CMS
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/migrate-images.ts
  * 
  * This script:

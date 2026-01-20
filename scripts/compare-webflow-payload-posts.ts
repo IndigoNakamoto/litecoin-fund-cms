@@ -2,7 +2,7 @@
  * Compare Webflow posts with Payload CMS posts to find missing links
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/compare-webflow-payload-posts.ts
  */
 

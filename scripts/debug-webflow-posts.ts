@@ -2,7 +2,7 @@
  * Debug script to check what fields actually exist in Webflow posts
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/debug-webflow-posts.ts
  */
 

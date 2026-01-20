@@ -2,7 +2,7 @@
  * Compare Webflow data with Payload CMS data to identify outdated records
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/compare-webflow-payload.ts
  */
 

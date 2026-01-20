@@ -2,7 +2,7 @@
  * Analyze all projects in Webflow to see what we're filtering out
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/analyze-webflow-projects.ts
  */
 

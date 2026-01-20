@@ -3,7 +3,7 @@
  * Checks relationships, required fields, and data consistency
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/test-data-integrity.ts
  */
 

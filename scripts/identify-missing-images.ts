@@ -2,7 +2,7 @@
  * Script to identify missing images in Payload CMS
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/identify-missing-images.ts
  */
 

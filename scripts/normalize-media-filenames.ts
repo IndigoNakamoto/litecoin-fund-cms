@@ -6,13 +6,13 @@
  * - Payload's file server resolves/decodes the filename and looks for a path with spaces,
  *   so files stored on disk as "...%20..." are treated as missing.
  *
- * This script renames files under `payload-cms/media/` by decoding any percent-escapes
+ * This script renames files under `litecoin-fund-cms/media/` by decoding any percent-escapes
  * (e.g. `%20` -> space). It will:
  * - Skip renames that would introduce path separators
  * - Skip collisions if the target filename already exists
  *
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   ./node_modules/.bin/tsx scripts/normalize-media-filenames.ts
  *
  * Dry run:

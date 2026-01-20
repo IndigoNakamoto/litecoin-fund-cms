@@ -2,7 +2,7 @@
  * Migration script to import data from Webflow to Payload CMS
  * 
  * Usage:
- *   cd payload-cms
+ *   cd litecoin-fund-cms
  *   npx tsx scripts/migrate-from-webflow.ts
  * 
  * Make sure to set environment variables:
